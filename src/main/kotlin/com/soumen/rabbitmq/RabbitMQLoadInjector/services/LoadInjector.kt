@@ -30,12 +30,12 @@ class LoadInjector(val amqpPublisher: AMQPPublisher, val perfTestScenarioDao: Pe
         val steps: List<Step> = fetchSteps(scenario.tpss!!.split(","), scenario.durations!!.split(","))
         for (i in steps.indices) {
             val step: Step = steps[i]
-            logger.info("STEP -- " + step.tps + " DURATION - " + step.duration)
+            logger.info("STEP --  ${step.tps}  DURATION -  ${step.duration}")
             val endTime: Long = System.currentTimeMillis() + step.duration * 1000
             val rateLimiter: RateLimiter = RateLimiter.create(step.tps.toDouble())
             while (true) {
                 if (STOPREQUESTS.isNotEmpty() && STOPREQUESTS.contains(scenario.testName)) {
-                    logger.info("Interrupted .. " + scenario.testName)
+                    logger.info("Interrupted .. ${scenario.testName}")
                     changeTaskStatus(scenario.testName, TaskStatus.USER_STOPPED)
                     STOPREQUESTS.remove(scenario.testName)
                     RUNNINGTASKS.remove(scenario.testName)
