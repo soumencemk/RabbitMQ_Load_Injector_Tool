@@ -36,19 +36,19 @@ spring.datasource.driver-class-name=org.h2.Driver
 spring.jpa.hibernate.ddl-auto=update
 
 ```
+> Optionally, the changes can be made to the external config file that we are going to create on step - 3. 
 #### 2. Build the project -
-```
+```bash
 $ ./mvnw clean package
-
 ```
 > you might need to set the `JAVA_HOME` and other env variables for this.
 
 #### 3. copy the application.prorties to current directory -
 
-```
+```bash
 $ cp ./src/main/resources/application.properties config.properties
 ```
-> furthur changes to property file can be made in this `config.properties` itself.
+> Changes to the properties has to be made in this `config.properties` file itself, if wasn't made already in application.properties. 
 
 #### 4. Execute the `start.sh` script to start the application.   
 #### 5. Execute the `stop.sh` script to stop the application. 
