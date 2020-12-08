@@ -1,5 +1,6 @@
 # RabbitMQ Load injector tool
 
+![Java CI with Maven](https://github.com/soumencemk/RabbitMQ_Load_Injector_Tool/workflows/Java%20CI%20with%20Maven/badge.svg)
 ## SETUP
 #### 1. Change the [application.properties](./src/main/resources/application.properties) with the proper values
 ```properties
