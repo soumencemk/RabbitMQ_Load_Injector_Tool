@@ -1,0 +1,265 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Rabbit Perf Test</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+
+    <link href="https://use.fontawesome.com/releases/v5.0.4/css/all.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Oswald:400,300,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="theme.css" type="text/css">
+    <style>
+
+        /* Safari */
+        @-webkit-keyframes spin {
+            0% {
+                -webkit-transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        /* stylistic properties only */
+
+        /* basic positioning */
+
+        .legend li {
+            float: left;
+            margin-right: 10px;
+        }
+
+        .legend span {
+            border: 1px solid #ccc;
+            float: left;
+            width: 12px;
+            height: 12px;
+            margin: 2px;
+        }
+
+        @include media-breakpoint-only(lg) {
+            column-count: 3;
+        }
+        @include media-breakpoint-only(xl) {
+            column-count: 4;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 6px rgba(200, 200, 200, 1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            border-radius: 10px;
+            background-color: #fff;
+            -webkit-box-shadow: inset 0 0 6px rgba(90, 90, 90, 0.7);
+        }
+
+        body {
+            font-family: 'Calibri', sans-serif !important;
+        }
+
+        .all_pad {
+            padding: 50px 20px 20px;
+        }
+
+        .card:hover {
+            box-shadow: 0 0 11px rgba(33, 33, 33, .2);
+        }
+
+        input:hover {
+            box-shadow: 0 0 11px rgba(33, 33, 33, .2);
+        }
+
+        .jumbotron {
+            background-color: aliceblue;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif !important;
+        }
+/*        .border{
+            border-width:3px !important;
+        }*/
+    </style>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400&display=swap" rel="stylesheet">
+
+
+</head>
+<body class="container">
+<div class="jumbotron jumbotron-fluid bd-lead">
+    <div class="container panel">
+        <h2 class="display-6 text-center"><i
+                class="fas fa-stopwatch"></i> <img
+                src="https://upload.wikimedia.org/wikipedia/commons/7/71/RabbitMQ_logo.svg" height="28"> Performance
+            Test <i
+                    class="fas fa-stopwatch"></i></h2>
+    </div>
+</div>
+<div class="all_pad mt-5">
+    <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMsg}">
+        <p th:text="${successMsg}"></p>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${errorMsg}">
+        <p th:text="${errorMsg}"></p>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div class="row">
+        <div class="col">
+            <form action="#" th:action="@{/submitTask}" th:object="${perfTest}" method="post"
+                  class="border rounded-lg all_pad">
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label for="name">NAME</label>
+                        <input type="text" th:field="*{testName}" class="form-control" id="name"
+                               placeholder="Test case Name" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="tps">TPS</label>
+                        <input type="text" th:field="*{tpss}" class="form-control" id="tps" placeholder="TPS"
+                               required data-toggle="tooltip" data-placement="bottom"
+                               title="Comma separate for Step test">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="duration">Duration (Sec)</label>
+                        <input type="text" th:field="*{durations}" class="form-control" id="duration"
+                               placeholder="Duration" required data-toggle="tooltip" data-placement="bottom"
+                               title="Comma separate for different durations or use only one">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="exchange">Exchange</label>
+                        <input type="text" class="form-control" th:field="*{exchangeName}" id="exchange"
+                               placeholder="Exchange Name"
+                               required>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="routingKey">Routing Key</label>
+                        <input type="text" class="form-control" th:field="*{routingKey}" id="routingKey"
+                               placeholder="Routing Key" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12 text-center">
+                        <label for="exampleFormControlTextarea1">PAYLOAD</label>
+                        <textarea class="form-control" id="exampleFormControlTextarea1" th:field="*{payload}"
+                                  rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-4"></div>
+                    <div class="form-group col-md-4">
+                        <button type="submit" class="btn btn-outline-dark"><i class="fa fa-plus" aria-hidden="true"></i>Add
+                            Task
+                        </button>
+                    </div>
+                    <div class="form-group col-md-4"></div>
+                </div>
+            </form>
+        </div>
+        <div class="col border rounded-lg">
+            <div class="d-flex justify-content-between all_pad" th:if="${not #lists.isEmpty(perfTestsList)}">
+                <div>
+                    <a class="btn btn-outline-success"
+                       th:href="@{/startAll}"><i class="fas fa-check"></i> START ALL</a>
+                </div>
+                <div>
+                    <a class="btn btn-outline-danger"
+                       th:href="@{/stopAll}"><i class="far fa-stop-circle"></i> STOP ALL</a>
+                </div>
+            </div>
+
+            <div th:each="perfTestScenario,iterStat: ${perfTestsList}" class="all_pad">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5><i class="fas fa-tasks"></i> <span th:text="${perfTestScenario.testName}"></span>
+                                </h5>
+                            </div>
+                            <div>
+                                <a th:href="@{/delete_Test(testName=${perfTestScenario.testName})}"><i
+                                        class="fas fa-trash"></i></a>
+                            </div>
+                        </div>
+                        <span class="text-secondary" th:if="${perfTestScenario.actualStartTime}">   START TIME : </span><span
+                            th:text="${perfTestScenario.actualStartTime}"></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">
+                            <div class="row">
+                                <div class="col">
+                                    <span class="text-secondary"><i
+                                            class="fas fa-info"></i> STATUS : </span><span
+                                        th:text="${perfTestScenario.status}"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col"><span class="text-info"><i class="fas fa-chart-line"></i> TPS : </span><span
+                                        th:text="${perfTestScenario.tpss}"></span></div>
+                                <div class="col"><span class="text-info"><i
+                                        class="fas fa-stopwatch"></i> DURATION :</span> <span
+                                        th:text="${perfTestScenario.durations}"></span></div>
+                            </div>
+                            <div class="row">
+                                <div class="col"><span class="text-success"> <i class="fas fa-exchange-alt"></i>  Exchange :</span><span
+                                        th:text="${perfTestScenario.exchangeName}"></span></div>
+                                <div class="col"><span class="text-success"> <i
+                                        class="fas fa-key"></i>  Routing Key :</span> <span
+                                        th:text="${perfTestScenario.routingKey}"></span></div>
+                            </div>
+                        </div>
+
+                        <div class="card-footer d-flex justify-content-between">
+                            <div>
+                                <a class="btn btn-outline-success"
+                                   th:href="@{/startTest(testName=${perfTestScenario.testName})}"><i
+                                        class="fas fa-play"></i> START</a>
+                            </div>
+                            <div>
+                                <a class="btn btn-outline-danger"
+                                   th:href="@{/stopTest(testName=${perfTestScenario.testName})}"><i
+                                        class="fas fa-stop"></i> STOP</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    })
+</script>
+
+</body>
+</html>
