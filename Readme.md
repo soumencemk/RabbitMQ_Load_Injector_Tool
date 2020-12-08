@@ -50,8 +50,8 @@ $ cp ./src/main/resources/application.properties config.properties
 ```
 > Changes to the properties has to be made in this `config.properties` file itself, if wasn't made already in application.properties. 
 
-#### 4. Execute the `start.sh` script to start the application.   
-#### 5. Execute the `stop.sh` script to stop the application. 
+#### 4. Execute the [`start.sh`](start.sh) script to start the application.   
+#### 5. Execute the [`stop.sh`](stop.sh) script to stop the application. 
 
 
 
