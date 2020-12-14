@@ -2,9 +2,10 @@ package com.soumen.rabbitmq.RabbitMQLoadInjector.controller
 
 import com.soumen.rabbitmq.RabbitMQLoadInjector.entity.PerfTestScenario
 import com.soumen.rabbitmq.RabbitMQLoadInjector.entity.TaskStatus
+import com.soumen.rabbitmq.RabbitMQLoadInjector.entity.TaskStatus.NOT_STARTED
 import com.soumen.rabbitmq.RabbitMQLoadInjector.repo.PerfTestScenarioDao
 import com.soumen.rabbitmq.RabbitMQLoadInjector.services.LoadInjector
-import mu.KLogging
+import mu.KotlinLogging
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
@@ -19,8 +20,10 @@ import java.util.function.Consumer
  * @Date 08/12/2020
  */
 @Controller
+class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector: LoadInjector) {
 
-class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector: LoadInjector){
+    private val logger = KotlinLogging.logger {}
+
     @GetMapping("/")
     fun home(model: Model): String? {
         return homeRedirect(model)
@@ -30,16 +33,17 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
     fun handleStartAll(model: Model): String? {
         val errorMessages = StringBuilder()
         val successMessages = StringBuilder()
-        val perfScenarioList: List<PerfTestScenario> = perfTestScenarioDao.findAll()
-        perfScenarioList.forEach(Consumer { perfTestScenario: PerfTestScenario ->
-            try {
-                this.startTest(perfTestScenario.testName)
-                successMessages.append(perfTestScenario.testName).append(" STARTED...   ")
-            } catch (e: Exception) {
-                errorMessages.append(e.message)
-                errorMessages.append("\n")
-            }
-        })
+        perfTestScenarioDao.findAll().also {
+            it.forEach(Consumer {
+                try {
+                    this.startTest(it.testName!!)
+                    successMessages.append(it.testName).append(" STARTED...   ")
+                } catch (e: Exception) {
+                    errorMessages.append(e.message)
+                    errorMessages.append("\n")
+                }
+            })
+        }
         if (errorMessages.isNotEmpty()) {
             model.addAttribute("errorMsg", errorMessages.toString())
         }
@@ -53,16 +57,17 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
     fun handleStopAll(model: Model): String? {
         val errorMessages = StringBuilder()
         val successMessages = StringBuilder()
-        val perfScenarioList: List<PerfTestScenario> = perfTestScenarioDao.findAll()
-        perfScenarioList.forEach(Consumer { perfTestScenario: PerfTestScenario ->
-            try {
-                this.stopTest(perfTestScenario.testName)
-                successMessages.append(perfTestScenario.testName).append(" STOPPED...   ")
-            } catch (e: Exception) {
-                errorMessages.append(e.message)
-                errorMessages.append("\n")
-            }
-        })
+        perfTestScenarioDao.findAll().also {
+            it.forEach(Consumer {
+                try {
+                    this.stopTest(it.testName)
+                    successMessages.append(it.testName).append(" STOPPED...   ")
+                } catch (e: Exception) {
+                    errorMessages.append(e.message)
+                    errorMessages.append("\n")
+                }
+            })
+        }
         if (errorMessages.isNotEmpty()) {
             model.addAttribute("errorMsg", errorMessages.toString())
         }
@@ -84,9 +89,9 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
     fun submitTask(@ModelAttribute perfTestScenario: PerfTestScenario, model: Model): String? {
         try {
             logger.info("Creating task...")
-            if (!perfTestScenarioDao.findById(perfTestScenario.testName!!).isPresent) {
+            if (!perfTestScenarioDao.existsById(perfTestScenario.testName!!)) {
                 perfTestScenario.scheduleTime = Date()
-                perfTestScenario.status = TaskStatus.NOT_STARTED
+                perfTestScenario.status = NOT_STARTED
                 perfTestScenarioDao.save(perfTestScenario)
             } else {
                 model.addAttribute("errorMsg", "Task name : ${perfTestScenario.testName} already exists !")
@@ -98,7 +103,7 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
         return homeRedirect(model)
     }
 
-    private fun homeRedirect(model: Model): String? {
+    private fun homeRedirect(model: Model): String {
         model.addAttribute("perfTest", PerfTestScenario())
         model.addAttribute("perfTestsList", perfTestScenarioDao.findAll())
         return "home"
@@ -108,30 +113,36 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
     @GetMapping("/startTest")
     fun startTest(@RequestParam("testName") testName: String, model: Model): String? {
         try {
-            startTest(testName)
+            this.startTest(testName)
             model.addAttribute("successMsg", "STARTED - $testName")
         } catch (e: Exception) {
+            logger.error { e }
             model.addAttribute("errorMsg", e.message)
         }
         return homeRedirect(model)
     }
 
-    private fun startTest(testName: String?) {
-        val scenario: PerfTestScenario = perfTestScenarioDao.findById(testName!!).get()
-        if (!injector.isAlreadyRunning(testName)) {
-            logger.info("Starting ... $testName")
-            injector.startPerfTest(scenario)
-            injector.changeTaskStatus(testName, TaskStatus.IN_PROGRESS)
-        } else {
-            throw RuntimeException("$testName already in Progress")
+    private fun startTest(testName: String) {
+        perfTestScenarioDao.findById(testName).get().also {
+            injector.run {
+                if (!isAlreadyRunning(testName)) {
+                    logger.info("Starting ... $testName")
+                    startPerfTest(it)
+                    changeTaskStatus(testName, TaskStatus.IN_PROGRESS)
+                } else {
+                    throw RuntimeException("$testName already in Progress")
+                }
+            }
         }
     }
 
 
     private fun stopTest(testName: String?) {
-        injector.stopTest(testName!!)
-        injector.changeTaskStatus(testName, TaskStatus.USER_STOPPED)
-        injector.updateStartTime(testName, null)
+        injector.apply {
+            stopTest(testName!!)
+            changeTaskStatus(testName, TaskStatus.USER_STOPPED)
+            updateStartTime(testName, null)
+        }
     }
 
 
@@ -146,7 +157,4 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
         }
         return homeRedirect(model)
     }
-
-    companion object : KLogging()
-
 }

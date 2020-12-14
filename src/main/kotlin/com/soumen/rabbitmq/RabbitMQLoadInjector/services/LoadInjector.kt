@@ -5,9 +5,10 @@ import com.soumen.rabbitmq.RabbitMQLoadInjector.entity.PerfTestScenario
 import com.soumen.rabbitmq.RabbitMQLoadInjector.entity.Step
 import com.soumen.rabbitmq.RabbitMQLoadInjector.entity.TaskStatus
 import com.soumen.rabbitmq.RabbitMQLoadInjector.repo.PerfTestScenarioDao
-import mu.KLogging
+import mu.KotlinLogging
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import java.lang.System.currentTimeMillis
 import java.time.Duration
 import java.util.*
 
@@ -18,74 +19,74 @@ import java.util.*
 @Service
 class LoadInjector(val amqpPublisher: AMQPPublisher, val perfTestScenarioDao: PerfTestScenarioDao) {
 
-    private val RUNNINGTASKS = Collections.synchronizedSet(HashSet<String>())
-    private val STOPREQUESTS = Collections.synchronizedSet(HashSet<String>())
+    private val logger = KotlinLogging.logger {}
 
-    companion object : KLogging()
+    companion object {
+        private val RUNNINGTASKS: MutableSet<String> by lazy { Collections.synchronizedSet(HashSet()) }
+        private val STOPREQUESTS: MutableSet<String> by lazy { Collections.synchronizedSet(HashSet()) }
+    }
 
     @Async
     fun startPerfTest(scenario: PerfTestScenario) {
-        RUNNINGTASKS.add(scenario.testName)
-        updateStartTime(scenario.testName!!, Date())
+        RUNNINGTASKS += scenario.testName!!
+        this.updateStartTime(scenario.testName!!, Date())
         val steps: List<Step> = fetchSteps(scenario.tpss!!.split(","), scenario.durations!!.split(","))
         for (i in steps.indices) {
             val step: Step = steps[i]
             logger.info("STEP --  ${step.tps}  DURATION -  ${step.duration}")
-            val endTime: Long = System.currentTimeMillis() + step.duration * 1000
+            val endTime: Long = currentTimeMillis() + step.duration * 1000
             val rateLimiter: RateLimiter = RateLimiter.create(step.tps.toDouble())
-            while (true) {
-                if (STOPREQUESTS.isNotEmpty() && STOPREQUESTS.contains(scenario.testName)) {
+            while (currentTimeMillis() < endTime) {
+                if (STOPREQUESTS.isNotEmpty() && scenario.testName in STOPREQUESTS) {
                     logger.info("Interrupted .. ${scenario.testName}")
-                    changeTaskStatus(scenario.testName, TaskStatus.USER_STOPPED)
+                    this.changeTaskStatus(scenario.testName!!, TaskStatus.USER_STOPPED)
                     STOPREQUESTS.remove(scenario.testName)
                     RUNNINGTASKS.remove(scenario.testName)
                     return
                 }
-                if (System.currentTimeMillis() >= endTime) {
+                if (currentTimeMillis() >= endTime) {
                     break
                 }
-                val acquired: Boolean = rateLimiter.tryAcquire(1, Duration.ZERO)
-                if (acquired) {
+                if (rateLimiter.tryAcquire(1, Duration.ZERO)) {
                     amqpPublisher.publish(scenario.exchangeName, scenario.routingKey, scenario.payload)
                 }
             }
         }
-        changeTaskStatus(scenario.testName, TaskStatus.FINISHED)
+        this.changeTaskStatus(scenario.testName!!, TaskStatus.FINISHED)
         RUNNINGTASKS.remove(scenario.testName)
     }
 
-    fun stopTest(testName: String) {
-        if (RUNNINGTASKS.contains(testName)) {
-            STOPREQUESTS.add(testName)
-        } else {
-            throw RuntimeException("$testName Not running at the moment!")
-        }
+    fun stopTest(testName: String) = if (testName in RUNNINGTASKS) {
+        STOPREQUESTS += testName
+    } else {
+        throw RuntimeException("$testName Not running at the moment!")
     }
 
     fun updateStartTime(testName: String, startTime: Date?) {
-        val perfTestScenario: PerfTestScenario = perfTestScenarioDao.findById(testName).get()
-        perfTestScenario.actualStartTime = startTime
-        perfTestScenarioDao.save(perfTestScenario)
+        logger.info { "Start time - $testName :: $startTime" }
+        perfTestScenarioDao.findById(testName).get().run {
+            actualStartTime = startTime
+            perfTestScenarioDao.save(this)
+        }
     }
 
-    fun changeTaskStatus(testName: String?, status: TaskStatus?) {
-        val perfTestScenario: PerfTestScenario = perfTestScenarioDao.findById(testName!!).get()
-        perfTestScenario.status = status
-        perfTestScenarioDao.save(perfTestScenario)
+    fun changeTaskStatus(testName: String, status: TaskStatus) {
+        logger.info { "TEST : $testName STATUS : $status" }
+        perfTestScenarioDao.findById(testName).get().run {
+            this.status = status
+            perfTestScenarioDao.save(this)
+        }
     }
 
-    fun isAlreadyRunning(taskName: String?): Boolean {
-        return RUNNINGTASKS.contains(taskName)
-    }
+    fun isAlreadyRunning(taskName: String) = taskName in RUNNINGTASKS
 
     private fun fetchSteps(tpss: List<String>, durations: List<String>): List<Step> {
-        val list: MutableList<Step> = ArrayList<Step>()
+        val list = ArrayList<Step>()
         if (durations.size > 1 && tpss.size != durations.size) {
-            throw RuntimeException("TPS and DuRATIONS count mismatch")
+            throw RuntimeException("TPS and DURATIONS count mismatch")
         } else {
-            var step: Step
             for (i in tpss.indices) {
-                step = if (durations.size == 1) {
+                val step = if (durations.size == 1) {
                     Step(tpss[i].toInt(), durations[0].toInt())
                 } else {
                     Step(tpss[i].toInt(), durations[i].toInt())
@@ -95,5 +96,4 @@ class LoadInjector(val amqpPublisher: AMQPPublisher, val perfTestScenarioDao: Pe
         }
         return list
     }
-
 }
