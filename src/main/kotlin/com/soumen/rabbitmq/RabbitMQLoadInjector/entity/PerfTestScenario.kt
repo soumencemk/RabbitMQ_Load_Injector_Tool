@@ -3,6 +3,7 @@ package com.soumen.rabbitmq.RabbitMQLoadInjector.entity
 import java.util.*
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.Lob
 
 /**
  * @author Soumen Karmakar
@@ -10,16 +11,16 @@ import javax.persistence.Id
  */
 @Entity
 data class PerfTestScenario (
-    @Id
+        @Id
     var testName: String?,
-    var tpss: String?,
-    var durations: String?,
-    var exchangeName: String?,
-    var routingKey: String?,
-    var status: TaskStatus?,
-    var payload: String?,
-    var scheduleTime: Date?,
-    var actualStartTime: Date?,
+        var tpss: String?,
+        var durations: String?,
+        var exchangeName: String?,
+        var routingKey: String?,
+        var status: TaskStatus?,
+        @Lob var payload: String?,
+        var scheduleTime: Date?,
+        var actualStartTime: Date?,
 ) {
     constructor() : this(null,null,null,null,null,null,null,null,null)
 }
