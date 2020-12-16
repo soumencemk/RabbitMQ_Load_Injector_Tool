@@ -57,25 +57,6 @@
             column-count: 4;
         }
 
-        ::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        ::-webkit-scrollbar-track {
-            -webkit-box-shadow: inset 0 0 6px rgba(200, 200, 200, 1);
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            border-radius: 10px;
-            background-color: #fff;
-            -webkit-box-shadow: inset 0 0 6px rgba(90, 90, 90, 0.7);
-        }
-
-        body {
-            font-family: 'Calibri', sans-serif !important;
-        }
-
         .all_pad {
             padding: 50px 20px 20px;
         }
@@ -105,16 +86,17 @@
 
 </head>
 <body class="container">
-<div class="jumbotron jumbotron-fluid bd-lead">
-    <div class="container panel">
-        <h2 class="display-6 text-center"><i
-                class="fas fa-stopwatch"></i> <img
-                src="https://upload.wikimedia.org/wikipedia/commons/7/71/RabbitMQ_logo.svg" height="28"> Performance
-            Test <i
-                    class="fas fa-stopwatch"></i></h2>
+<nav class="navbar navbar-expand-sm bg-light justify-content-center align-items-start">
+    <button class="navbar-toggler mr-auto" type="button" data-toggle="collapse" data-target="#navbar">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <span class="navbar-brand position-absolute"><h2><img src="https://upload.wikimedia.org/wikipedia/commons/7/71/RabbitMQ_logo.svg" alt="" height="40"> Load Injector Tool</h2>
+    </span>
+    <div class="navbar-collapse collapse" id="navbar">
+        <a href="https://github.com/soumencemk/RabbitMQ_Load_Injector_Tool"><img loading="lazy" width="100" height="100" src="https://github.blog/wp-content/uploads/2008/12/forkme_left_white_ffffff.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1"></a>
     </div>
-</div>
-<div class="all_pad mt-5">
+</nav>
+<div class="mt-5">
     <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${successMsg}">
         <p th:text="${successMsg}"></p>
         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -254,6 +236,17 @@
         </div>
     </div>
 </div>
+<!-- Footer -->
+<footer class="page-footer font-small blue">
+
+    <!-- Copyright -->
+    <div class="footer-copyright text-center py-3">
+        Made with <i class="fas fa-heart"></i> by Soumen Karmakar
+    </div>
+    <!-- Copyright -->
+
+</footer>
+<!-- Footer -->
 
 <script>
     $(function () {
