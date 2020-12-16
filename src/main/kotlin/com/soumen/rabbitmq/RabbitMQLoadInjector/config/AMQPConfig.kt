@@ -4,14 +4,19 @@ import com.rabbitmq.client.ConnectionFactory
 import mu.KotlinLogging
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer
+import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.io.FileInputStream
 import java.security.KeyStore
+import java.util.function.Consumer
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
+
 
 /**
  * @author Soumen Karmakar
@@ -46,6 +51,18 @@ class AMQPConfig {
 
     @Value("\${rabbitmq.port}")
     private val rabbitPort: String? = null
+
+    @Value("\${consumer.required:false}")
+    private val consumerReqd: Boolean? = null
+
+    @Value("\${consumer.queue.name:SV_RESPONSE}")
+    private val queue_to_consume: String? = null
+
+    @Value("\${consumer.concurrent.min}")
+    private val min_no_of_consumers: Int? = null
+
+    @Value("\${consumer.concurrent.max}")
+    private val max_no_of_consumers: Int? = null
 
     private val logger = KotlinLogging.logger {}
 
@@ -86,6 +103,27 @@ class AMQPConfig {
         logger.info { "Successfully initialised AMQP connection" }
         return connectionFactory
     }
+
+    @Bean
+    @ConditionalOnProperty(
+            value = ["consumer.required"],
+            havingValue = "true",
+            matchIfMissing = false)
+    fun messageListenerAdapter(consumer: Consumer<Any>) = MessageListenerAdapter(consumer, "accept")
+
+    @Bean
+    @ConditionalOnProperty(
+            value = ["consumer.required"],
+            havingValue = "true",
+            matchIfMissing = false)
+    fun simpleMessageListenerContainer(listenerAdapter: MessageListenerAdapter) =
+            SimpleMessageListenerContainer().apply {
+                connectionFactory = connectionFactory()!!
+                setConcurrentConsumers(min_no_of_consumers!!)
+                setMaxConcurrentConsumers(max_no_of_consumers!!)
+                setQueueNames(queue_to_consume)
+                setMessageListener(listenerAdapter)
+            }
 
     @Bean
     fun getRabbitTemplate(connectionFactory: CachingConnectionFactory?) = RabbitTemplate(connectionFactory!!)
