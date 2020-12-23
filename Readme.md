@@ -14,6 +14,15 @@ server.port=${SERVER_PORT:8080}
 ###################
 rabbitmq.hosts=${RABBIT_HOSTS:localhost}
 rabbitmq.port=${RABBIT_PORT:5672}
+
+##################
+### Consumers ####
+##################
+consumer.required=true
+consumer.queue.name=SV_RESPONSE
+consumer.concurrent.min=25
+consumer.concurrent.max=100
+consumer.isLogReqd=false
 ################
 ## SSL Config ##
 ################

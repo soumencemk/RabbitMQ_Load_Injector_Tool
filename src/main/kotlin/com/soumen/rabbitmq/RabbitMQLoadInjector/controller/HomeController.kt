@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
+import reactor.core.publisher.Mono
 import java.util.*
 import java.util.function.Consumer
 
@@ -25,12 +26,12 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
     private val logger = KotlinLogging.logger {}
 
     @GetMapping("/")
-    fun home(model: Model): String? {
+    fun home(model: Model): Mono<String> {
         return homeRedirect(model)
     }
 
     @GetMapping(value = ["/startAll"])
-    fun handleStartAll(model: Model): String? {
+    fun handleStartAll(model: Model): Mono<String> {
         val errorMessages = StringBuilder()
         val successMessages = StringBuilder()
         perfTestScenarioDao.findAll().also {
@@ -54,7 +55,7 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
     }
 
     @GetMapping(value = ["/stopAll"])
-    fun handleStopAll(model: Model): String? {
+    fun handleStopAll(model: Model): Mono<String> {
         val errorMessages = StringBuilder()
         val successMessages = StringBuilder()
         perfTestScenarioDao.findAll().also {
@@ -79,14 +80,14 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
 
 
     @GetMapping(value = ["/delete_Test"])
-    fun handleDeleteUser(@RequestParam(name = "testName") testName: String, model: Model): String? {
+    fun handleDeleteUser(@RequestParam(name = "testName") testName: String, model: Model): Mono<String> {
         perfTestScenarioDao.deleteById(testName)
         model.addAttribute("successMsg", "DELETED - $testName")
         return homeRedirect(model)
     }
 
     @PostMapping("/submitTask")
-    fun submitTask(@ModelAttribute perfTestScenario: PerfTestScenario, model: Model): String? {
+    fun submitTask(@ModelAttribute perfTestScenario: PerfTestScenario, model: Model): Mono<String> {
         try {
             logger.info("Creating task...")
             if (!perfTestScenarioDao.existsById(perfTestScenario.testName!!)) {
@@ -103,15 +104,15 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
         return homeRedirect(model)
     }
 
-    private fun homeRedirect(model: Model): String {
+    private fun homeRedirect(model: Model): Mono<String> {
         model.addAttribute("perfTest", PerfTestScenario())
         model.addAttribute("perfTestsList", perfTestScenarioDao.findAll())
-        return "home"
+        return Mono.just("home")
     }
 
 
     @GetMapping("/startTest")
-    fun startTest(@RequestParam("testName") testName: String, model: Model): String? {
+    fun startTest(@RequestParam("testName") testName: String, model: Model): Mono<String> {
         try {
             this.startTest(testName)
             model.addAttribute("successMsg", "STARTED - $testName")
@@ -147,7 +148,7 @@ class HomeController(val perfTestScenarioDao: PerfTestScenarioDao, val injector:
 
 
     @GetMapping("/stopTest")
-    fun stopTest(@RequestParam("testName") testName: String, model: Model): String? {
+    fun stopTest(@RequestParam("testName") testName: String, model: Model): Mono<String> {
         logger.info("stopping ... $testName")
         try {
             stopTest(testName)

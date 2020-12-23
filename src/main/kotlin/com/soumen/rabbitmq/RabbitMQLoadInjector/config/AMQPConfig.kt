@@ -67,7 +67,7 @@ class AMQPConfig {
     private val logger = KotlinLogging.logger {}
 
     @Bean(name = ["rabbitConnectionFactory"])
-    fun connectionFactory(): CachingConnectionFactory? {
+    fun connectionFactory(): CachingConnectionFactory {
         val sslContext: SSLContext by lazy { SSLContext.getInstance("TLSv1.2") }
         if (usessl) {
             try {
@@ -118,7 +118,7 @@ class AMQPConfig {
             matchIfMissing = false)
     fun simpleMessageListenerContainer(listenerAdapter: MessageListenerAdapter) =
             SimpleMessageListenerContainer().apply {
-                connectionFactory = connectionFactory()!!
+                connectionFactory = connectionFactory()
                 setConcurrentConsumers(min_no_of_consumers!!)
                 setMaxConcurrentConsumers(max_no_of_consumers!!)
                 setQueueNames(queue_to_consume)
